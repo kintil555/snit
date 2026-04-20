@@ -2,751 +2,314 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SnapText — Kirim Teks Instan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ScanText — Scan Teks ke Laptop</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src='https://unpkg.com/tesseract.js@4/dist/tesseract.min.js'></script>
 
 <style>
-/* ===== DESIGN SYSTEM ===== */
 :root {
-  --bg: #0a0a0f;
-  --surface: #12121a;
-  --surface2: #1a1a26;
-  --border: rgba(255,255,255,0.07);
-  --border-bright: rgba(255,255,255,0.15);
-  --accent: #00e5c0;
-  --accent2: #7c4dff;
-  --accent3: #ff4d7c;
-  --text: #f0f0f8;
-  --text-dim: #7070a0;
-  --text-dimmer: #404060;
-  --radius: 16px;
-  --radius-sm: 8px;
-  --font: 'Syne', sans-serif;
-  --mono: 'DM Mono', monospace;
-  --ws-url: 'https://snitrelay.secret5.workers.dev';
+  --bg: #0d0d0d;
+  --surface: #161616;
+  --surface2: #1f1f1f;
+  --border: rgba(255,255,255,0.08);
+  --border-bright: rgba(255,255,255,0.18);
+  --green: #00ff88;
+  --green-dim: rgba(0,255,136,0.1);
+  --green-border: rgba(0,255,136,0.22);
+  --amber: #ffb800;
+  --red: #ff4444;
+  --text: #f2f2f2;
+  --text-dim: #666;
+  --text-mid: #999;
+  --r: 12px;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Space Grotesk', sans-serif;
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
+html, body { height: 100%; }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font);
+  font-family: var(--sans);
   min-height: 100vh;
   overflow-x: hidden;
 }
+#app { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* Background grid */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0,229,192,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,229,192,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Glow blobs */
-.glow-blob {
-  position: fixed;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.12;
-  pointer-events: none;
-  z-index: 0;
-}
-.glow-blob-1 { width: 500px; height: 500px; background: var(--accent); top: -100px; right: -100px; }
-.glow-blob-2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; left: -100px; }
-
-/* ===== LAYOUT ===== */
-#app {
-  position: relative;
-  z-index: 1;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
+/* HEADER */
 header {
-  padding: 24px 32px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  padding: 16px 24px;
+  display: flex; align-items: center; gap: 12px;
   border-bottom: 1px solid var(--border);
+  position: sticky; top: 0;
+  background: rgba(13,13,13,0.96);
+  backdrop-filter: blur(12px);
+  z-index: 100;
 }
-
-.logo-mark {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border-radius: 10px;
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon {
+  width: 30px; height: 30px;
+  background: var(--green); border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
+  font-size: 15px; flex-shrink: 0;
 }
-
-.logo-text {
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-}
-
-.logo-text span { color: var(--accent); }
-
-.status-pill {
+.logo-name { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+.logo-name span { color: var(--green); }
+.status-chip {
   margin-left: auto;
   display: flex; align-items: center; gap: 6px;
-  font-size: 12px;
-  font-family: var(--mono);
-  color: var(--text-dim);
-  background: var(--surface);
-  border: 1px solid var(--border);
+  padding: 5px 12px;
+  background: var(--surface); border: 1px solid var(--border);
   border-radius: 100px;
-  padding: 4px 12px;
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
 }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+.status-dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.wait { background: var(--amber); animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
-.status-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--text-dimmer);
-  transition: background 0.3s;
-}
-.status-dot.connected { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-.status-dot.waiting { background: #ffaa00; animation: pulse-dot 1s infinite; }
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-main {
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 40px 20px 60px;
-}
-
-/* ===== SCREENS ===== */
-.screen {
-  width: 100%;
-  max-width: 560px;
-  display: none;
-  animation: fadeUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
+/* MAIN */
+main { flex: 1; display: flex; align-items: flex-start; justify-content: center; padding: 28px 16px 60px; }
+.screen { width: 100%; max-width: 520px; display: none; animation: up 0.3s cubic-bezier(0.22,1,0.36,1) both; }
 .screen.active { display: block; }
+@keyframes up { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* HOME */
+.hero { padding: 8px 0 32px; text-align: center; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; background: var(--green-dim);
+  border: 1px solid var(--green-border); border-radius: 100px;
+  font-family: var(--mono); font-size: 11px; color: var(--green); letter-spacing: 0.5px;
+  margin-bottom: 18px;
 }
-
-/* ===== HOME SCREEN ===== */
-.home-hero {
-  text-align: center;
-  padding: 20px 0 40px;
+.hero h1 {
+  font-size: clamp(30px, 7vw, 48px); font-weight: 700;
+  line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 12px;
 }
-
-.home-hero h1 {
-  font-size: clamp(36px, 8vw, 56px);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -2px;
-  margin-bottom: 16px;
+.hero h1 em { font-style: normal; color: var(--green); }
+.hero p { font-size: 14px; color: var(--text-mid); line-height: 1.65; max-width: 340px; margin: 0 auto 32px; }
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mode-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 22px 18px;
+  cursor: pointer; text-align: left;
+  transition: border-color 0.2s, transform 0.2s, background 0.2s;
 }
-
-.home-hero h1 .accent { color: var(--accent); }
-
-.home-hero p {
-  color: var(--text-dim);
-  font-size: 16px;
-  line-height: 1.6;
-  max-width: 380px;
-  margin: 0 auto 40px;
+.mode-card:hover { border-color: var(--green); background: var(--green-dim); transform: translateY(-2px); }
+.mode-card-tag { font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+.mode-icon { font-size: 26px; margin-bottom: 12px; }
+.mode-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+.mode-card p { font-size: 12px; color: var(--text-mid); line-height: 1.5; }
+.feature-list { margin-top: 20px; display: flex; flex-direction: column; gap: 7px; }
+.feature-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 13px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px; color: var(--text-mid);
 }
+.feature-item .fi { font-size: 14px; flex-shrink: 0; }
 
-.role-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.role-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 28px 24px;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-
-.role-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.role-card.receiver::before { background: radial-gradient(circle at top left, rgba(0,229,192,0.08), transparent 70%); }
-.role-card.sender::before { background: radial-gradient(circle at top left, rgba(124,77,255,0.08), transparent 70%); }
-
-.role-card:hover { border-color: var(--border-bright); transform: translateY(-2px); }
-.role-card:hover::before { opacity: 1; }
-
-.role-icon {
-  width: 48px; height: 48px;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px;
-  margin-bottom: 16px;
-}
-
-.role-card.receiver .role-icon { background: rgba(0,229,192,0.1); }
-.role-card.sender .role-icon { background: rgba(124,77,255,0.1); }
-
-.role-card h3 {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.role-card p {
-  font-size: 13px;
-  color: var(--text-dim);
-  line-height: 1.5;
-}
-
-.role-badge {
-  position: absolute;
-  top: 12px; right: 12px;
-  font-size: 10px;
-  font-family: var(--mono);
-  color: var(--accent);
-  background: rgba(0,229,192,0.1);
-  border: 1px solid rgba(0,229,192,0.2);
-  border-radius: 100px;
-  padding: 2px 8px;
-  letter-spacing: 0.5px;
-}
-.role-card.sender .role-badge { color: var(--accent2); background: rgba(124,77,255,0.1); border-color: rgba(124,77,255,0.2); }
-
-/* ===== DEVICE SELECT ===== */
-.section-header {
-  margin-bottom: 28px;
-}
-
+/* SHARED ELEMENTS */
+.section-title { margin-bottom: 22px; }
 .back-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 13px;
-  color: var(--text-dim);
-  cursor: pointer;
-  margin-bottom: 20px;
-  padding: 6px 0;
-  background: none;
-  border: none;
-  font-family: var(--font);
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-dim); background: none; border: none;
+  cursor: pointer; font-family: var(--sans); margin-bottom: 14px; padding: 4px 0;
   transition: color 0.2s;
 }
 .back-btn:hover { color: var(--text); }
-.back-btn::before { content: '←'; }
+.section-title h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.7px; margin-bottom: 4px; }
+.section-title p { font-size: 13px; color: var(--text-mid); }
 
-.section-header h2 {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -1px;
-  margin-bottom: 6px;
-}
-
-.section-header p { color: var(--text-dim); font-size: 14px; }
-
-.device-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.device-card {
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.2s;
-}
-
-.device-card:hover, .device-card.selected {
-  border-color: var(--accent);
-  background: rgba(0,229,192,0.05);
-}
-
-.device-card .dev-icon { font-size: 32px; margin-bottom: 10px; }
-.device-card h4 { font-size: 14px; font-weight: 700; }
-.device-card p { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
-
-/* ===== CARD BASE ===== */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 28px;
-  margin-bottom: 16px;
-}
-
-/* ===== QR SECTION ===== */
-.qr-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-#qr-canvas-container {
-  position: relative;
-  padding: 16px;
-  background: #fff;
-  border-radius: 12px;
-  width: fit-content;
-}
-
-#qr-canvas-container canvas { display: block; }
-
-.qr-overlay-expired {
-  position: absolute;
-  inset: 0;
-  background: rgba(10,10,15,0.92);
-  border-radius: 12px;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 8px;
-  text-align: center;
-}
-.qr-overlay-expired.show { display: flex; }
-.qr-overlay-expired .expire-icon { font-size: 32px; }
-.qr-overlay-expired p { font-size: 13px; color: var(--text-dim); }
-.qr-overlay-expired button { margin-top: 4px; }
-
-/* Timer bar */
-.timer-bar-wrap {
-  width: 100%;
-  background: var(--surface2);
-  border-radius: 100px;
-  height: 6px;
-  overflow: hidden;
-}
-
-.timer-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  border-radius: 100px;
-  transition: width 0.5s linear, background 0.5s;
-  width: 100%;
-}
-
-.timer-label {
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--text-dim);
-  text-align: center;
-}
-
-.timer-label.urgent { color: var(--accent3); }
-
-/* Numeric code */
-.numeric-code-display {
-  text-align: center;
-  padding: 20px;
-}
-
-.code-digits {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin: 16px 0;
-}
-
-.code-digit {
-  width: 52px; height: 68px;
-  background: var(--surface2);
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28px;
-  font-family: var(--mono);
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 0;
-  animation: digit-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes digit-in {
-  from { opacity: 0; transform: scale(0.6); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.code-label {
-  font-size: 13px;
-  color: var(--text-dim);
-  margin-bottom: 4px;
-}
-
-/* ===== SCANNER ===== */
-.scanner-container {
-  position: relative;
-  width: 100%;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: #000;
-  aspect-ratio: 1;
-  max-height: 320px;
-}
-
-#scanner-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.scan-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.scan-frame {
-  width: 180px; height: 180px;
-  border: 2px solid var(--accent);
-  border-radius: 16px;
-  position: relative;
-  box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
-}
-
-.scan-frame::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--accent);
-  animation: scan-line 2s ease-in-out infinite;
-  box-shadow: 0 0 8px var(--accent);
-}
-
-@keyframes scan-line {
-  0% { top: 0; }
-  100% { top: calc(100% - 2px); }
-}
-
-/* Corners */
-.scan-frame::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border: 2px solid transparent;
-  border-radius: 16px;
-  background: linear-gradient(var(--bg), var(--bg)) padding-box,
-    linear-gradient(var(--accent), var(--accent2)) border-box;
-}
-
-/* ===== CODE INPUT ===== */
-.code-input-row {
-  display: flex;
-  gap: 10px;
-}
-
-.code-input {
-  flex: 1;
-  background: var(--surface2);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 14px 18px;
-  font-size: 22px;
-  font-family: var(--mono);
-  color: var(--text);
-  letter-spacing: 6px;
-  text-align: center;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.code-input:focus { border-color: var(--accent); }
-.code-input::placeholder { font-size: 14px; letter-spacing: 0; color: var(--text-dimmer); }
-
-/* ===== BUTTONS ===== */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 12px 22px;
-  border-radius: var(--radius-sm);
-  font-family: var(--font);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
-}
-
-.btn-primary {
-  background: var(--accent);
-  color: #0a0a0f;
-}
-.btn-primary:hover { background: #00ffd5; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,229,192,0.3); }
-.btn-primary:active { transform: translateY(0); }
-
-.btn-secondary {
-  background: var(--surface2);
-  color: var(--text);
-  border: 1px solid var(--border-bright);
-}
-.btn-secondary:hover { background: var(--surface); border-color: var(--accent); color: var(--accent); }
-
-.btn-danger { background: rgba(255,77,124,0.15); color: var(--accent3); border: 1px solid rgba(255,77,124,0.3); }
-.btn-danger:hover { background: rgba(255,77,124,0.25); }
-
-.btn-full { width: 100%; }
-.btn-sm { padding: 8px 14px; font-size: 12px; }
-
-.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
-
-/* ===== TEXT AREA ===== */
-.text-area-wrap { position: relative; }
-
-.text-input {
-  width: 100%;
-  min-height: 140px;
-  background: var(--surface2);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 16px;
-  font-size: 15px;
-  font-family: var(--font);
-  color: var(--text);
-  resize: vertical;
-  outline: none;
-  transition: border-color 0.2s;
-  line-height: 1.6;
-}
-.text-input:focus { border-color: var(--accent); }
-.text-input::placeholder { color: var(--text-dimmer); }
-
-.char-count {
-  position: absolute;
-  bottom: 10px; right: 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-dimmer);
-}
-
-/* ===== RECEIVED TEXT ===== */
-.received-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 12px;
-  animation: slideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-.received-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.received-label {
-  font-size: 11px;
-  font-family: var(--mono);
-  color: var(--accent);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.received-time {
-  font-size: 11px;
-  font-family: var(--mono);
-  color: var(--text-dimmer);
-}
-
-.received-text {
-  font-size: 15px;
-  line-height: 1.6;
-  word-break: break-word;
-  margin-bottom: 14px;
-}
-
-.copy-btn {
-  font-size: 12px;
-}
-
-/* ===== CONNECTING STATE ===== */
-.connecting-state {
-  text-align: center;
-  padding: 40px 20px;
-}
-
-.spinner {
-  width: 44px; height: 44px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto 20px;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.connecting-state h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-.connecting-state p { color: var(--text-dim); font-size: 14px; }
-
-/* ===== PEER CONNECTED ===== */
 .peer-badge {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12px;
-  font-family: var(--mono);
-  color: var(--accent);
-  background: rgba(0,229,192,0.08);
-  border: 1px solid rgba(0,229,192,0.2);
-  border-radius: 100px;
-  padding: 4px 12px;
-  margin-bottom: 16px;
+  padding: 6px 14px; background: var(--green-dim);
+  border: 1px solid var(--green-border); border-radius: 100px;
+  font-family: var(--mono); font-size: 11px; color: var(--green); margin-bottom: 14px;
 }
 
-/* ===== TOAST ===== */
-#toast-container {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
+/* QR CARD */
+.qr-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 24px;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  margin-bottom: 14px;
 }
-
-.toast {
-  background: var(--surface2);
-  border: 1px solid var(--border-bright);
-  border-radius: 100px;
-  padding: 10px 20px;
-  font-size: 13px;
-  font-family: var(--mono);
-  color: var(--text);
-  white-space: nowrap;
-  animation: toastIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+.qr-box { position: relative; padding: 12px; background: #fff; border-radius: 10px; width: fit-content; }
+.qr-expired-overlay {
+  position: absolute; inset: 0; background: rgba(13,13,13,0.93);
+  border-radius: 10px; display: none;
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 7px; text-align: center; padding: 14px;
 }
-.toast.success { border-color: rgba(0,229,192,0.3); color: var(--accent); }
-.toast.error { border-color: rgba(255,77,124,0.3); color: var(--accent3); }
+.qr-expired-overlay.show { display: flex; }
+.qr-expired-overlay p { font-size: 12px; color: var(--text-mid); }
+.timer-section { width: 100%; max-width: 200px; }
+.timer-label { font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-align: center; margin-bottom: 5px; }
+.timer-label.urgent { color: var(--red); }
+.timer-track { height: 4px; background: var(--surface2); border-radius: 100px; overflow: hidden; }
+.timer-fill { height: 100%; background: var(--green); border-radius: 100px; transition: width 0.25s linear, background 0.25s; }
 
-@keyframes toastIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.9); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+/* RECEIVED */
+.received-block {
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--green); border-radius: var(--r);
+  overflow: hidden; margin-bottom: 10px;
+  animation: slideIn 0.25s cubic-bezier(0.22,1,0.36,1) both;
 }
-
-/* ===== SECTION TABS ===== */
-.tab-row {
-  display: flex;
-  gap: 4px;
-  background: var(--surface2);
-  border-radius: var(--radius-sm);
-  padding: 4px;
-  margin-bottom: 20px;
+@keyframes slideIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:translateX(0)} }
+.rb-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 13px; background: var(--surface2); border-bottom: 1px solid var(--border);
 }
+.rb-label { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; color: var(--green); text-transform: uppercase; }
+.rb-time  { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+.rb-body  { padding: 13px; }
+.rb-text  { font-size: 14px; line-height: 1.7; word-break: break-word; white-space: pre-wrap; color: var(--text); margin-bottom: 10px; }
+.rb-btns  { display: flex; gap: 7px; flex-wrap: wrap; }
+.small-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; padding: 5px 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-mid); cursor: pointer;
+  font-family: var(--sans); transition: all 0.2s;
+}
+.small-btn:hover { border-color: var(--green); color: var(--green); }
+.empty-state { text-align: center; padding: 36px 20px; color: var(--text-dim); font-size: 13px; }
+.empty-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.3; }
 
-.tab {
-  flex: 1;
+/* PHONE CONNECT */
+.connect-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 20px; margin-bottom: 14px;
+}
+.connect-step { display: flex; align-items: center; gap: 11px; font-size: 13px; color: var(--text-mid); margin-bottom: 12px; }
+.connect-step:last-child { margin-bottom: 0; }
+.step-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim); flex-shrink: 0;
+}
+.qr-scanner-wrap {
+  position: relative; width: 100%; aspect-ratio: 1; max-height: 280px;
+  border-radius: 10px; overflow: hidden; background: #000; margin-bottom: 8px;
+}
+#conn-video { width: 100%; height: 100%; object-fit: cover; }
+.scan-reticle { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.reticle-box {
+  width: 150px; height: 150px;
+  border: 2px solid var(--green); border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+  position: relative;
+}
+.reticle-box::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: var(--green); box-shadow: 0 0 8px var(--green);
+  animation: scanline 1.8s ease-in-out infinite;
+}
+@keyframes scanline { 0%{top:0} 100%{top:calc(100% - 2px)} }
+.scan-hint { text-align: center; font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
+
+/* OCR */
+.ocr-viewfinder {
+  position: relative; width: 100%; aspect-ratio: 4/3;
+  border-radius: 10px; overflow: hidden; background: #000; margin-bottom: 10px;
+}
+#ocr-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ocr-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.ocr-frame {
+  width: 86%; height: 62%;
+  border: 2px solid rgba(0,255,136,0.55); border-radius: 7px; position: relative;
+}
+.ocr-frame::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  animation: ocrScan 2s linear infinite;
+}
+@keyframes ocrScan { 0%{top:0;opacity:1} 90%{top:calc(100% - 3px);opacity:1} 100%{top:calc(100% - 3px);opacity:0} }
+.ocr-status-bar {
+  position: absolute; bottom: 0; left: 0; right: 0;
   padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  color: var(--text-dim);
-  font-family: var(--font);
-  transition: all 0.2s;
-  text-align: center;
+  background: linear-gradient(transparent, rgba(0,0,0,0.85));
+  font-family: var(--mono); font-size: 11px; color: var(--green); text-align: center;
 }
-
-.tab.active {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
+.ocr-preview {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 11px 13px; font-size: 13px; line-height: 1.6;
+  color: var(--text-dim); min-height: 56px; max-height: 110px;
+  overflow-y: auto; word-break: break-word; white-space: pre-wrap;
+  font-family: var(--mono); margin-bottom: 10px;
 }
+.ocr-preview.has-text { color: var(--text); }
+.ocr-preview.processing { color: var(--amber); }
 
-/* ===== MISC ===== */
-.divider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 20px 0;
+/* BUTTONS */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px 18px; border-radius: 8px; font-family: var(--sans);
+  font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+  transition: all 0.2s; white-space: nowrap;
 }
+.btn-green { background: var(--green); color: #0d0d0d; }
+.btn-green:hover { background: #00ffaa; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,255,136,0.3); }
+.btn-green:active { transform: translateY(0); }
+.btn-green:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; box-shadow: none; }
+.btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border-bright); }
+.btn-ghost:hover { border-color: var(--green); color: var(--green); }
+.btn-ghost:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-danger { background: rgba(255,68,68,0.1); color: var(--red); border: 1px solid rgba(255,68,68,0.22); }
+.btn-danger:hover { background: rgba(255,68,68,0.2); }
+.btn-full { width: 100%; }
+.btn-sm { padding: 7px 13px; font-size: 12px; }
+.btn-icon { padding: 10px 13px; }
+.btn-row { display: flex; gap: 8px; margin-top: 8px; }
 
-.info-row {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px;
-  color: var(--text-dim);
-  padding: 10px 14px;
-  background: var(--surface2);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  margin-bottom: 12px;
+/* MISC */
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+textarea.manual-ta {
+  width: 100%; min-height: 72px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 11px 13px; font-size: 14px; font-family: var(--sans);
+  color: var(--text); resize: vertical; outline: none; transition: border-color 0.2s;
 }
+textarea.manual-ta:focus { border-color: var(--green); }
 
-.info-row .info-icon { flex-shrink: 0; }
-
-/* ===== HISTORY EMPTY ===== */
-.empty-state {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-dimmer);
+/* TOASTS */
+#toasts {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 9998; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none;
 }
-.empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
-.empty-state p { font-size: 14px; }
+.toast {
+  background: var(--surface2); border: 1px solid var(--border-bright);
+  border-radius: 100px; padding: 8px 16px;
+  font-size: 12px; font-family: var(--mono); color: var(--text);
+  white-space: nowrap; box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  animation: toastPop 0.25s cubic-bezier(0.22,1,0.36,1) both;
+}
+.toast.ok  { border-color: var(--green-border); color: var(--green); }
+.toast.err { border-color: rgba(255,68,68,0.3); color: var(--red); }
+@keyframes toastPop { from{opacity:0;transform:translateY(8px) scale(0.9)} to{opacity:1;transform:translateY(0) scale(1)} }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
-  header { padding: 16px 20px; }
-  main { padding: 20px 16px 40px; }
-  .role-cards { grid-template-columns: 1fr; }
-  .device-cards { grid-template-columns: 1fr; }
-  .code-digit { width: 42px; height: 56px; font-size: 22px; }
-  .card { padding: 20px; }
+  header { padding: 12px 14px; }
+  main { padding: 18px 12px 40px; }
+  .mode-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
-
-<div class="glow-blob glow-blob-1"></div>
-<div class="glow-blob glow-blob-2"></div>
-
 <div id="app">
   <header>
-    <div class="logo-mark">⚡</div>
-    <div class="logo-text">Snap<span>Text</span></div>
-    <div class="status-pill">
+    <div class="logo">
+      <div class="logo-icon">📷</div>
+      <div class="logo-name">Scan<span>Text</span></div>
+    </div>
+    <div class="status-chip">
       <div class="status-dot" id="status-dot"></div>
       <span id="status-label">offline</span>
     </div>
@@ -754,723 +317,524 @@ main {
 
   <main>
 
-    <!-- ===== SCREEN: HOME ===== -->
+    <!-- HOME -->
     <div class="screen active" id="screen-home">
-      <div class="home-hero">
-        <h1>Kirim teks<br><span class="accent">tanpa repot.</span></h1>
-        <p>Scan, kirim, terima. Tidak perlu akun, tidak perlu install app. Aman dan terenkripsi.</p>
+      <div class="hero">
+        <div class="hero-badge">📖 → 💻 OCR Real-time</div>
+        <h1>Scan buku,<br>langsung ke <em>laptop.</em></h1>
+        <p>Arahkan kamera HP ke tulisan di buku atau kertas. Teks otomatis terbaca dan terkirim ke laptopmu.</p>
       </div>
-      <div class="role-cards">
-        <div class="role-card receiver" onclick="App.selectRole('receiver')">
-          <div class="role-badge">TERIMA</div>
-          <div class="role-icon">📥</div>
-          <h3>Saya Penerima</h3>
-          <p>Buat kode unik, tunggu teks masuk dari perangkat lain.</p>
+      <div class="mode-grid">
+        <div class="mode-card" onclick="App.startAsLaptop()">
+          <div class="mode-card-tag">Penerima</div>
+          <div class="mode-icon">💻</div>
+          <h3>Saya di Laptop</h3>
+          <p>Tampilkan QR, terima teks hasil scan dari HP.</p>
         </div>
-        <div class="role-card sender" onclick="App.selectRole('sender')">
-          <div class="role-badge">KIRIM</div>
-          <div class="role-icon">📤</div>
-          <h3>Saya Pengirim</h3>
-          <p>Scan kode QR atau masukkan kode angka, lalu kirim teks.</p>
+        <div class="mode-card" onclick="App.startAsPhone()">
+          <div class="mode-card-tag">Scanner</div>
+          <div class="mode-icon">📱</div>
+          <h3>Saya di HP</h3>
+          <p>Scan QR laptop, arahkan kamera ke tulisan.</p>
         </div>
       </div>
-      <div style="margin-top:24px">
-        <div class="info-row">
-          <span class="info-icon">🔒</span>
-          <span>Semua teks dienkripsi end-to-end. Kode expired otomatis dalam 15 detik.</span>
+      <div class="feature-list">
+        <div class="feature-item"><span class="fi">🔍</span><span>OCR otomatis — baca tulisan dari buku, kertas, atau layar</span></div>
+        <div class="feature-item"><span class="fi">⚡</span><span>Teks langsung muncul di laptop, siap di-copy ke Word</span></div>
+        <div class="feature-item"><span class="fi">🔒</span><span>Terenkripsi AES-GCM, tidak ada data disimpan di server</span></div>
+      </div>
+    </div>
+
+    <!-- LAPTOP -->
+    <div class="screen" id="screen-laptop">
+      <div class="section-title">
+        <button class="back-btn" onclick="App.goHome()">← Kembali</button>
+        <h2>Siap menerima teks</h2>
+        <p>Scan QR ini dari HP untuk mulai.</p>
+      </div>
+      <div class="qr-card">
+        <div class="qr-box">
+          <div id="qr-render"></div>
+          <div class="qr-expired-overlay" id="qr-expired">
+            <div style="font-size:26px">⏱️</div>
+            <p>QR kedaluwarsa</p>
+            <button class="btn btn-green btn-sm" onclick="App.refreshRoom()" style="margin-top:6px">Perbarui QR</button>
+          </div>
         </div>
-        <div class="info-row">
-          <span class="info-icon">⚡</span>
-          <span>Real-time via WebSocket. Tidak ada data yang disimpan di server.</span>
+        <div class="timer-section">
+          <div class="timer-label" id="timer-label">Berlaku 15 detik</div>
+          <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+        </div>
+      </div>
+      <div class="peer-badge" id="peer-badge" style="display:none">
+        <span>●</span> HP terhubung — menunggu scan teks
+      </div>
+      <div id="received-area">
+        <div class="empty-state" id="empty-hint">
+          <div class="empty-icon">📄</div>
+          <p>Teks hasil scan HP akan muncul di sini</p>
         </div>
       </div>
     </div>
 
-    <!-- ===== SCREEN: RECEIVER DEVICE SELECT ===== -->
-    <div class="screen" id="screen-receiver-device">
-      <div class="section-header">
-        <button class="back-btn" onclick="App.goHome()">Kembali</button>
-        <h2>Perangkat apa ini?</h2>
-        <p>Pilih jenis perangkat penerima agar kami beri kode yang sesuai.</p>
+    <!-- PHONE: Connect -->
+    <div class="screen" id="screen-phone-connect">
+      <div class="section-title">
+        <button class="back-btn" onclick="App.goHome()">← Kembali</button>
+        <h2>Hubungkan ke Laptop</h2>
+        <p>Scan QR yang tampil di layar laptop.</p>
       </div>
-      <div class="device-cards">
-        <div class="device-card" id="dev-desktop" onclick="App.selectDevice('desktop')">
-          <div class="dev-icon">💻</div>
-          <h4>Laptop / Desktop</h4>
-          <p>Dapatkan QR Code yang di-scan HP</p>
+      <div class="connect-card">
+        <div class="connect-step">
+          <div class="step-num">1</div>
+          <span>Buka ScanText di laptop → pilih <strong>"Saya di Laptop"</strong></span>
         </div>
-        <div class="device-card" id="dev-mobile" onclick="App.selectDevice('mobile')">
-          <div class="dev-icon">📱</div>
-          <h4>HP / Tablet</h4>
-          <p>Dapatkan kode 6 angka</p>
+        <div class="connect-step">
+          <div class="step-num">2</div>
+          <span>Arahkan kamera HP ke QR di layar laptop</span>
         </div>
       </div>
-      <button class="btn btn-primary btn-full" id="btn-create-room" disabled onclick="App.createRoom()">
-        Buat Kode Sekarang →
-      </button>
+      <div class="qr-scanner-wrap">
+        <video id="conn-video" autoplay muted playsinline></video>
+        <div class="scan-reticle"><div class="reticle-box"></div></div>
+      </div>
+      <canvas id="conn-canvas" style="display:none"></canvas>
+      <p class="scan-hint">Arahkan ke QR di layar laptop</p>
     </div>
 
-    <!-- ===== SCREEN: RECEIVER WAITING (QR) ===== -->
-    <div class="screen" id="screen-receiver-qr">
-      <div class="section-header">
-        <button class="back-btn" onclick="App.goHome()">Kembali</button>
-        <h2>Scan kode ini</h2>
-        <p>Buka SnapText di HP, pilih Pengirim, lalu scan QR berikut.</p>
+    <!-- PHONE: OCR -->
+    <div class="screen" id="screen-phone-ocr">
+      <div class="section-title">
+        <button class="back-btn" onclick="App.goHome()">← Putus & Keluar</button>
+        <h2>Scan Teks</h2>
+        <p>Arahkan ke tulisan, tekan Scan.</p>
       </div>
-      <div class="card qr-wrapper">
-        <div id="qr-canvas-container">
-          <div id="qr-placeholder"></div>
-          <div class="qr-overlay-expired" id="qr-expired">
-            <div class="expire-icon">⏱️</div>
-            <p>Kode kedaluwarsa</p>
-            <button class="btn btn-primary btn-sm" onclick="App.refreshCode()">Perbarui Kode</button>
-          </div>
-        </div>
-        <div style="width:100%;max-width:240px">
-          <div class="timer-label" id="qr-timer-label">Berlaku 15 detik</div>
-          <div class="timer-bar-wrap" style="margin-top:6px">
-            <div class="timer-bar" id="qr-timer-bar"></div>
-          </div>
-        </div>
-        <div class="peer-badge" id="peer-badge-qr" style="display:none">
-          <span>●</span> Pengirim terhubung
-        </div>
+      <div class="peer-badge" style="margin-bottom:14px">
+        <span>●</span> Terhubung ke laptop
       </div>
-      <div id="received-list-qr"></div>
-    </div>
+      <div class="ocr-viewfinder">
+        <video id="ocr-video" autoplay muted playsinline></video>
+        <div class="ocr-overlay"><div class="ocr-frame"></div></div>
+        <div class="ocr-status-bar" id="ocr-status">Siap scan</div>
+      </div>
+      <div class="ocr-preview" id="ocr-preview">Hasil teks akan muncul di sini...</div>
+      <div class="btn-row">
+        <button class="btn btn-green" id="btn-capture" onclick="App.captureAndOCR()" style="flex:1">📷 Scan Sekarang</button>
+        <button class="btn btn-ghost btn-icon" id="btn-send-ocr" onclick="App.sendOCRText()" disabled title="Kirim ke laptop">↗ Kirim</button>
+      </div>
+      <canvas id="ocr-canvas" style="display:none"></canvas>
 
-    <!-- ===== SCREEN: RECEIVER WAITING (NUMERIC CODE) ===== -->
-    <div class="screen" id="screen-receiver-code">
-      <div class="section-header">
-        <button class="back-btn" onclick="App.goHome()">Kembali</button>
-        <h2>Kode masukmu</h2>
-        <p>Ketik kode ini di SnapText perangkat pengirim.</p>
-      </div>
-      <div class="card numeric-code-display">
-        <div class="code-label">Kode 6 Digit</div>
-        <div class="code-digits" id="code-digits-display"></div>
-        <div style="margin-top:16px">
-          <div class="timer-label" id="code-timer-label">Berlaku 15 detik</div>
-          <div class="timer-bar-wrap" style="margin-top:6px">
-            <div class="timer-bar" id="code-timer-bar"></div>
-          </div>
-        </div>
-        <div class="qr-overlay-expired" id="code-expired" style="position:static;display:none;background:transparent;padding:12px 0 0">
-          <p>Kode kedaluwarsa</p>
-          <button class="btn btn-primary btn-sm" onclick="App.refreshCode()" style="margin-top:4px">Perbarui Kode</button>
-        </div>
-      </div>
-      <div class="peer-badge" id="peer-badge-code" style="display:none;margin-bottom:12px">
-        <span>●</span> Pengirim terhubung
-      </div>
-      <div id="received-list-code"></div>
-    </div>
+      <hr class="divider">
 
-    <!-- ===== SCREEN: SENDER INPUT ===== -->
-    <div class="screen" id="screen-sender">
-      <div class="section-header">
-        <button class="back-btn" onclick="App.goHome()">Kembali</button>
-        <h2>Hubungkan & Kirim</h2>
-        <p>Scan QR penerima atau masukkan kode angka, lalu ketik teks yang ingin dikirim.</p>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Atau ketik teks manual:</div>
+      <textarea class="manual-ta" id="manual-text" placeholder="Ketik teks di sini..."></textarea>
+      <div class="btn-row">
+        <button class="btn btn-green btn-full" onclick="App.sendManualText()">Kirim Teks Manual ↗</button>
       </div>
-
-      <div class="tab-row">
-        <button class="tab active" id="tab-scan" onclick="App.senderTab('scan')">📷 Scan QR</button>
-        <button class="tab" id="tab-code" onclick="App.senderTab('code')">🔢 Kode Angka</button>
-      </div>
-
-      <!-- Scan tab -->
-      <div id="sender-scan-panel">
-        <div class="card" style="padding:16px">
-          <div class="scanner-container" id="scanner-container">
-            <video id="scanner-video" autoplay muted playsinline></video>
-            <div class="scan-overlay">
-              <div class="scan-frame"></div>
-            </div>
-          </div>
-          <div style="text-align:center;margin-top:12px">
-            <p style="font-size:13px;color:var(--text-dim)">Arahkan kamera ke QR Code penerima</p>
-          </div>
-        </div>
-        <canvas id="scan-canvas" style="display:none"></canvas>
-      </div>
-
-      <!-- Code tab -->
-      <div id="sender-code-panel" style="display:none">
-        <div class="card">
-          <label style="font-size:13px;color:var(--text-dim);display:block;margin-bottom:10px">Masukkan kode 6 digit dari penerima:</label>
-          <div class="code-input-row">
-            <input class="code-input" id="code-input" type="tel" maxlength="6" placeholder="------" inputmode="numeric" oninput="App.onCodeInput(this)">
-            <button class="btn btn-primary" id="btn-connect-code" onclick="App.connectByCode()" disabled>Hubungkan</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Connected state -->
-      <div id="sender-connected" style="display:none">
-        <div class="peer-badge" style="margin-bottom:12px">
-          <span>●</span> <span id="connected-room-id"></span>
-        </div>
-        <div class="card">
-          <div class="text-area-wrap">
-            <textarea class="text-input" id="text-to-send" placeholder="Ketik atau tempel teks di sini..." oninput="App.onTextInput()"></textarea>
-            <div class="char-count" id="char-count">0 / 5000</div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="btn btn-primary" id="btn-send" onclick="App.sendText()" disabled>Kirim Teks ↗</button>
-            <button class="btn btn-secondary" onclick="App.pasteText()">📋 Tempel</button>
-            <button class="btn btn-danger" onclick="App.disconnect()">Putus</button>
-          </div>
-        </div>
-        <div id="sent-list"></div>
-      </div>
-
     </div>
 
   </main>
 </div>
-
-<div id="toast-container"></div>
+<div id="toasts"></div>
 
 <script>
-// ==========================================
-//  SnapText — Client App
-// ==========================================
-
-// CONFIG: Ganti dengan URL worker Cloudflare kamu setelah deploy
-// Format: wss://snaptext-relay.YOUR-SUBDOMAIN.workers.dev
-// Dan    : https://snaptext-relay.YOUR-SUBDOMAIN.workers.dev
 const CONFIG = {
-  // Otomatis detect: jika di localhost pakai localhost relay fallback / demo mode
   get WS_BASE() {
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'ws://localhost:8787';
-    }
-    // GANTI INI setelah deploy worker:
-    return (window.SNAPTEXT_WS_URL || 'wss://snaptext-relay.workers.dev').replace(/\/$/, '');
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'ws://localhost:8787';
+    return (window.SNAPTEXT_WS_URL || 'wss://snitrelay.secret5.workers.dev').replace(/\/$/, '');
   },
   get API_BASE() {
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:8787';
-    }
-    return (window.SNAPTEXT_API_URL || 'https://snitrelay.secret5.workers.dev/').replace(/\/$/, '');
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'http://localhost:8787';
+    return (window.SNAPTEXT_API_URL || 'https://snitrelay.secret5.workers.dev').replace(/\/$/, '');
   },
   EXPIRE_MS: 15000,
-  MAX_TEXT: 5000,
 };
 
-// ==========================================
-//  STATE
-// ==========================================
 const State = {
-  role: null,         // 'sender' | 'receiver'
-  deviceType: null,   // 'desktop' | 'mobile'
-  roomId: null,
-  code: null,
-  ws: null,
-  timerInterval: null,
-  expiresAt: null,
-  peerConnected: false,
-  scanLoop: null,
-  videoStream: null,
-  senderTab: 'scan',
-  encKey: null,       // CryptoKey for this session
+  role: null, roomId: null, ws: null,
+  timerInterval: null, expiresAt: null, encKey: null,
+  connStream: null, connScanRaf: null,
+  ocrStream: null, ocrText: '',
 };
 
-// ==========================================
-//  CRYPTO (AES-GCM, key derived from roomId)
-// ==========================================
 const Crypto = {
   async deriveKey(roomId) {
     const raw = new TextEncoder().encode(roomId);
-    const hashBuf = await crypto.subtle.digest('SHA-256', raw);
-    return crypto.subtle.importKey('raw', hashBuf, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+    const hash = await crypto.subtle.digest('SHA-256', raw);
+    return crypto.subtle.importKey('raw', hash, { name:'AES-GCM' }, false, ['encrypt','decrypt']);
   },
-
   async encrypt(key, text) {
     const iv = crypto.getRandomValues(new Uint8Array(12));
-    const enc = new TextEncoder().encode(text);
-    const cipherBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc);
-    // Combine iv + ciphertext → base64
-    const combined = new Uint8Array(iv.byteLength + cipherBuf.byteLength);
-    combined.set(iv, 0);
-    combined.set(new Uint8Array(cipherBuf), iv.byteLength);
-    return btoa(String.fromCharCode(...combined));
+    const buf = await crypto.subtle.encrypt({ name:'AES-GCM', iv }, key, new TextEncoder().encode(text));
+    const out = new Uint8Array(12 + buf.byteLength);
+    out.set(iv); out.set(new Uint8Array(buf), 12);
+    return btoa(String.fromCharCode(...out));
   },
-
   async decrypt(key, b64) {
     const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    const iv = bytes.slice(0, 12);
-    const cipher = bytes.slice(12);
-    const decBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, cipher);
-    return new TextDecoder().decode(decBuf);
-  }
+    const buf = await crypto.subtle.decrypt({ name:'AES-GCM', iv: bytes.slice(0,12) }, key, bytes.slice(12));
+    return new TextDecoder().decode(buf);
+  },
 };
 
-// ==========================================
-//  MAIN APP
-// ==========================================
 const App = {
-
-  // --- Navigation ---
   showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const el = document.getElementById(id);
-    if (el) el.classList.add('active');
+    document.getElementById(id).classList.add('active');
   },
 
   goHome() {
     App.cleanup();
     App.showScreen('screen-home');
-    App.setStatus('offline');
+    App.setStatus('','offline');
   },
 
-  selectRole(role) {
-    State.role = role;
-    if (role === 'receiver') {
-      App.showScreen('screen-receiver-device');
-    } else {
-      App.showScreen('screen-sender');
-      App.senderTab('scan');
-      App.startScanner();
-    }
-  },
-
-  selectDevice(type) {
-    State.deviceType = type;
-    document.getElementById('dev-desktop').classList.remove('selected');
-    document.getElementById('dev-mobile').classList.remove('selected');
-    document.getElementById('dev-' + type).classList.add('selected');
-    document.getElementById('btn-create-room').disabled = false;
-  },
-
-  // --- Room Creation ---
-  async createRoom() {
-    App.setStatus('waiting');
-    try {
-      const res = await fetch(`${CONFIG.API_BASE}/api/room/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ receiverType: State.deviceType }),
-      });
-      if (!res.ok) throw new Error('Server error');
-      const { roomId, code, expiresAt } = await res.json();
-
-      State.roomId = roomId;
-      State.code = code;
-      State.expiresAt = expiresAt;
-      State.encKey = await Crypto.deriveKey(roomId);
-
-      if (State.deviceType === 'desktop') {
-        App.showScreen('screen-receiver-qr');
-        App.renderQR(roomId);
-      } else {
-        App.showScreen('screen-receiver-code');
-        App.renderNumericCode(code);
-      }
-
-      App.startExpireTimer();
-      App.connectWS(roomId, 'receiver');
-    } catch (e) {
-      App.toast('Gagal membuat kode. Cek koneksi internet.', 'error');
-      App.setStatus('offline');
-    }
-  },
-
-  async refreshCode() {
-    document.getElementById('qr-expired').classList.remove('show');
-    document.getElementById('code-expired').style.display = 'none';
+  // ---- LAPTOP MODE ----
+  async startAsLaptop() {
+    State.role = 'laptop';
+    App.showScreen('screen-laptop');
     await App.createRoom();
   },
 
-  // --- QR Render ---
+  async createRoom() {
+    App.setStatus('wait','menunggu...');
+    try {
+      const res = await fetch(`${CONFIG.API_BASE}/api/room/create`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ receiverType:'desktop' }),
+      });
+      if (!res.ok) throw new Error();
+      const { roomId, expiresAt } = await res.json();
+      State.roomId = roomId;
+      State.expiresAt = expiresAt;
+      State.encKey = await Crypto.deriveKey(roomId);
+      App.renderQR(roomId);
+      App.startTimer();
+      App.connectWS(roomId, 'receiver');
+    } catch {
+      App.toast('Gagal membuat room. Cek koneksi.','err');
+      App.setStatus('','offline');
+    }
+  },
+
+  async refreshRoom() {
+    document.getElementById('qr-expired').classList.remove('show');
+    await App.createRoom();
+  },
+
   renderQR(roomId) {
-    const container = document.getElementById('qr-placeholder');
-    container.innerHTML = '';
-    const qrData = JSON.stringify({ snaptext: 1, room: roomId });
-    new QRCode(container, {
-      text: qrData,
-      width: 200,
-      height: 200,
-      colorDark: '#0a0a0f',
-      colorLight: '#ffffff',
+    const el = document.getElementById('qr-render');
+    el.innerHTML = '';
+    new QRCode(el, {
+      text: JSON.stringify({ scantext:1, room:roomId }),
+      width:200, height:200, colorDark:'#0d0d0d', colorLight:'#ffffff',
       correctLevel: QRCode.CorrectLevel.H,
     });
   },
 
-  renderNumericCode(code) {
-    const el = document.getElementById('code-digits-display');
-    el.innerHTML = '';
-    code.split('').forEach((d, i) => {
-      const span = document.createElement('div');
-      span.className = 'code-digit';
-      span.textContent = d;
-      span.style.animationDelay = `${i * 0.06}s`;
-      el.appendChild(span);
-    });
-  },
-
-  // --- Expire Timer ---
-  startExpireTimer() {
+  startTimer() {
     if (State.timerInterval) clearInterval(State.timerInterval);
-    const barEl = document.getElementById(State.deviceType === 'desktop' ? 'qr-timer-bar' : 'code-timer-bar');
-    const labelEl = document.getElementById(State.deviceType === 'desktop' ? 'qr-timer-label' : 'code-timer-label');
-
-    const update = () => {
-      const remaining = State.expiresAt - Date.now();
-      const pct = Math.max(0, (remaining / CONFIG.EXPIRE_MS) * 100);
-      if (barEl) barEl.style.width = pct + '%';
-      const secs = Math.ceil(remaining / 1000);
-
-      if (remaining <= 0) {
+    const fill = document.getElementById('timer-fill');
+    const label = document.getElementById('timer-label');
+    const tick = () => {
+      const rem = State.expiresAt - Date.now();
+      const pct = Math.max(0, (rem / CONFIG.EXPIRE_MS) * 100);
+      if (fill) fill.style.width = pct + '%';
+      const s = Math.ceil(rem / 1000);
+      if (rem <= 0) {
         clearInterval(State.timerInterval);
-        if (labelEl) { labelEl.textContent = 'Kedaluwarsa!'; labelEl.classList.add('urgent'); }
-        if (barEl) barEl.style.background = 'var(--accent3)';
-        // Show expired overlay
-        if (State.deviceType === 'desktop') {
-          document.getElementById('qr-expired').classList.add('show');
-        } else {
-          document.getElementById('code-expired').style.display = 'flex';
-        }
+        if (label) { label.textContent = 'Kedaluwarsa!'; label.classList.add('urgent'); }
+        if (fill) fill.style.background = 'var(--red)';
+        document.getElementById('qr-expired').classList.add('show');
       } else {
-        if (labelEl) {
-          labelEl.textContent = `Berlaku ${secs} detik`;
-          labelEl.classList.toggle('urgent', secs <= 5);
-        }
-        if (barEl && secs <= 5) barEl.style.background = 'var(--accent3)';
+        if (label) { label.textContent = `Berlaku ${s} detik`; label.classList.toggle('urgent', s <= 5); }
+        if (fill && s <= 5) fill.style.background = 'var(--red)';
       }
     };
-
-    update();
-    State.timerInterval = setInterval(update, 200);
+    tick();
+    State.timerInterval = setInterval(tick, 250);
   },
 
-  // --- WebSocket ---
-  connectWS(roomId, role) {
-    const url = `${CONFIG.WS_BASE}/ws/${roomId}?role=${role}`;
-    App.setStatus('waiting');
-
-    if (State.ws) {
-      try { State.ws.close(); } catch {}
-    }
-
-    const ws = new WebSocket(url);
-    State.ws = ws;
-
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'READY' }));
-      App.setStatus('connected');
-    };
-
-    ws.onmessage = async (e) => {
-      let msg;
-      try { msg = JSON.parse(e.data); } catch { return; }
-
-      if (msg.type === 'CONNECTED') return;
-
-      if (msg.type === 'PEER_CONNECTED') {
-        State.peerConnected = true;
-        App.onPeerConnected(role);
-      }
-
-      if (msg.type === 'PEER_DISCONNECTED') {
-        State.peerConnected = false;
-        App.onPeerDisconnected(role);
-      }
-
-      if (msg.type === 'TEXT_RECEIVED') {
-        try {
-          const plain = State.encKey
-            ? await Crypto.decrypt(State.encKey, msg.text)
-            : msg.text;
-          App.onTextReceived(plain, role);
-        } catch {
-          App.onTextReceived(msg.text, role); // fallback unencrypted
-        }
-      }
-
-      if (msg.type === 'PONG') {}
-    };
-
-    ws.onerror = () => {
-      App.setStatus('offline');
-    };
-
-    ws.onclose = () => {
-      if (App._intentionalClose) return;
-      App.setStatus('offline');
-    };
+  // ---- PHONE MODE ----
+  async startAsPhone() {
+    State.role = 'phone';
+    App.showScreen('screen-phone-connect');
+    await App.startConnScanner();
   },
 
-  onPeerConnected(myRole) {
-    if (myRole === 'receiver') {
-      const badge = document.getElementById(State.deviceType === 'desktop' ? 'peer-badge-qr' : 'peer-badge-code');
-      if (badge) badge.style.display = 'inline-flex';
-    }
-    if (myRole === 'sender') {
-      // Already shown in connected panel
-    }
-    App.toast('Terhubung!', 'success');
-  },
-
-  onPeerDisconnected(myRole) {
-    if (myRole === 'receiver') {
-      const badge = document.getElementById(State.deviceType === 'desktop' ? 'peer-badge-qr' : 'peer-badge-code');
-      if (badge) badge.style.display = 'none';
-    }
-    App.toast('Pengirim terputus', 'error');
-  },
-
-  onTextReceived(text, myRole) {
-    const listId = myRole === 'receiver'
-      ? (State.deviceType === 'desktop' ? 'received-list-qr' : 'received-list-code')
-      : 'sent-list';
-
-    const container = document.getElementById(listId);
-    if (!container) return;
-
-    const card = document.createElement('div');
-    card.className = 'received-card';
-    const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-    card.innerHTML = `
-      <div class="received-meta">
-        <span class="received-label">${myRole === 'receiver' ? '📩 DITERIMA' : '✅ TERKIRIM'}</span>
-        <span class="received-time">${now}</span>
-      </div>
-      <div class="received-text">${App.escapeHtml(text)}</div>
-      <button class="btn btn-secondary btn-sm copy-btn" onclick="App.copyText(this, ${JSON.stringify(text)})">
-        📋 Salin
-      </button>
-    `;
-    container.prepend(card);
-
-    if (myRole === 'receiver') App.toast('Teks diterima!', 'success');
-  },
-
-  // --- Sender ---
-  senderTab(tab) {
-    State.senderTab = tab;
-    document.getElementById('tab-scan').classList.toggle('active', tab === 'scan');
-    document.getElementById('tab-code').classList.toggle('active', tab === 'code');
-    document.getElementById('sender-scan-panel').style.display = tab === 'scan' ? 'block' : 'none';
-    document.getElementById('sender-code-panel').style.display = tab === 'code' ? 'block' : 'none';
-
-    if (tab === 'scan') {
-      App.startScanner();
-    } else {
-      App.stopScanner();
-    }
-  },
-
-  onCodeInput(el) {
-    el.value = el.value.replace(/\D/g, '').slice(0, 6);
-    document.getElementById('btn-connect-code').disabled = el.value.length < 6;
-  },
-
-  async connectByCode() {
-    const code = document.getElementById('code-input').value.trim();
-    if (code.length !== 6) return;
-
+  async startConnScanner() {
     try {
-      const res = await fetch(`${CONFIG.API_BASE}/api/room/join-by-code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      if (!res.ok) throw new Error();
-      const { roomId } = await res.json();
-      App.connectSenderToRoom(roomId);
-    } catch {
-      App.toast('Kode tidak ditemukan atau kedaluwarsa.', 'error');
-    }
-  },
-
-  async connectSenderToRoom(roomId) {
-    State.roomId = roomId;
-    State.encKey = await Crypto.deriveKey(roomId);
-    App.stopScanner();
-    App.connectWS(roomId, 'sender');
-
-    document.getElementById('sender-scan-panel').style.display = 'none';
-    document.getElementById('sender-code-panel').style.display = 'none';
-    document.querySelectorAll('.tab-row')[0].style.display = 'none';
-    document.getElementById('sender-connected').style.display = 'block';
-    document.getElementById('connected-room-id').textContent = `Room: ${roomId.slice(0,8)}...`;
-  },
-
-  onTextInput() {
-    const val = document.getElementById('text-to-send').value;
-    const count = val.length;
-    document.getElementById('char-count').textContent = `${count} / ${CONFIG.MAX_TEXT}`;
-    document.getElementById('btn-send').disabled = count === 0 || count > CONFIG.MAX_TEXT;
-  },
-
-  async sendText() {
-    const text = document.getElementById('text-to-send').value.trim();
-    if (!text || !State.ws || State.ws.readyState !== WebSocket.OPEN) return;
-
-    try {
-      let payload = text;
-      if (State.encKey) {
-        payload = await Crypto.encrypt(State.encKey, text);
-      }
-
-      State.ws.send(JSON.stringify({ type: 'TEXT_PAYLOAD', text: payload }));
-      App.onTextReceived(text, 'sender'); // Show as sent
-      document.getElementById('text-to-send').value = '';
-      App.onTextInput();
-      App.toast('Teks terkirim!', 'success');
-    } catch (e) {
-      App.toast('Gagal mengirim.', 'error');
-    }
-  },
-
-  async pasteText() {
-    try {
-      const text = await navigator.clipboard.readText();
-      document.getElementById('text-to-send').value = text;
-      App.onTextInput();
-    } catch {
-      App.toast('Tidak bisa akses clipboard.', 'error');
-    }
-  },
-
-  copyText(btn, text) {
-    navigator.clipboard.writeText(text).then(() => {
-      btn.textContent = '✅ Tersalin!';
-      setTimeout(() => { btn.textContent = '📋 Salin'; }, 2000);
-    });
-  },
-
-  disconnect() {
-    App._intentionalClose = true;
-    if (State.ws) State.ws.close();
-    App.goHome();
-    App._intentionalClose = false;
-  },
-
-  // --- QR Scanner ---
-  async startScanner() {
-    if (State.videoStream) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 640 } }
-      });
-      State.videoStream = stream;
-      const video = document.getElementById('scanner-video');
+      const stream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment', width:{ideal:640}, height:{ideal:640} } });
+      State.connStream = stream;
+      const video = document.getElementById('conn-video');
       video.srcObject = stream;
       await video.play();
-      App.scanLoop();
-    } catch (e) {
-      // Camera denied — switch to code tab silently
-      App.senderTab('code');
-    }
+      App._connScanTick();
+    } catch { App.toast('Kamera tidak bisa diakses.','err'); }
   },
 
-  stopScanner() {
-    if (State.scanLoop) { cancelAnimationFrame(State.scanLoop); State.scanLoop = null; }
-    if (State.videoStream) {
-      State.videoStream.getTracks().forEach(t => t.stop());
-      State.videoStream = null;
-    }
-  },
-
-  scanLoop() {
-    const video = document.getElementById('scanner-video');
-    const canvas = document.getElementById('scan-canvas');
-    if (!video || !canvas) return;
-
+  _connScanTick() {
+    const video = document.getElementById('conn-video');
+    const canvas = document.getElementById('conn-canvas');
+    if (!video || !canvas || !State.connStream) return;
     const ctx = canvas.getContext('2d');
-
     const tick = () => {
+      if (!State.connStream) return;
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: 'dontInvert',
-        });
-        if (code) {
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const result = jsQR(img.data, img.width, img.height, { inversionAttempts:'dontInvert' });
+        if (result) {
           try {
-            const data = JSON.parse(code.data);
-            if (data.snaptext && data.room) {
-              App.stopScanner();
-              App.connectSenderToRoom(data.room);
+            const data = JSON.parse(result.data);
+            if (data.scantext && data.room) {
+              App.stopConnScanner();
+              App.connectPhoneToRoom(data.room);
               return;
             }
           } catch {}
         }
       }
-      State.scanLoop = requestAnimationFrame(tick);
+      State.connScanRaf = requestAnimationFrame(tick);
     };
-    tick();
+    State.connScanRaf = requestAnimationFrame(tick);
   },
 
-  // --- Cleanup ---
-  cleanup() {
-    App.stopScanner();
-    if (State.timerInterval) clearInterval(State.timerInterval);
-    if (State.ws) {
-      App._intentionalClose = true;
-      try { State.ws.close(); } catch {}
-      App._intentionalClose = false;
+  stopConnScanner() {
+    if (State.connScanRaf) { cancelAnimationFrame(State.connScanRaf); State.connScanRaf = null; }
+    if (State.connStream) { State.connStream.getTracks().forEach(t => t.stop()); State.connStream = null; }
+  },
+
+  async connectPhoneToRoom(roomId) {
+    State.roomId = roomId;
+    State.encKey = await Crypto.deriveKey(roomId);
+    App.connectWS(roomId, 'sender');
+    App.showScreen('screen-phone-ocr');
+    await App.startOCRCamera();
+  },
+
+  async startOCRCamera() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode:{ ideal:'environment' }, width:{ideal:1920}, height:{ideal:1080} }
+      });
+      State.ocrStream = stream;
+      const video = document.getElementById('ocr-video');
+      video.srcObject = stream;
+      await video.play();
+    } catch { App.toast('Kamera tidak bisa diakses.','err'); }
+  },
+
+  stopOCRCamera() {
+    if (State.ocrStream) { State.ocrStream.getTracks().forEach(t => t.stop()); State.ocrStream = null; }
+  },
+
+  async captureAndOCR() {
+    const video = document.getElementById('ocr-video');
+    const canvas = document.getElementById('ocr-canvas');
+    const preview = document.getElementById('ocr-preview');
+    const statusEl = document.getElementById('ocr-status');
+    const btn = document.getElementById('btn-capture');
+
+    if (!video || video.readyState < 2) { App.toast('Kamera belum siap.','err'); return; }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Memproses...';
+    statusEl.textContent = 'Mengambil gambar...';
+    preview.className = 'ocr-preview processing';
+    preview.textContent = 'Memproses OCR...';
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    try {
+      const { data: { text } } = await Tesseract.recognize(canvas, 'ind+eng', {
+        logger: m => {
+          if (m.status === 'recognizing text')
+            statusEl.textContent = `Membaca... ${Math.round(m.progress * 100)}%`;
+        }
+      });
+      const cleaned = text.trim();
+      State.ocrText = cleaned;
+      if (!cleaned) {
+        preview.className = 'ocr-preview';
+        preview.textContent = 'Tidak ada teks terdeteksi. Coba cahaya lebih terang.';
+        document.getElementById('btn-send-ocr').disabled = true;
+        App.toast('Teks tidak terdeteksi.','err');
+        statusEl.textContent = 'Coba lagi';
+      } else {
+        preview.className = 'ocr-preview has-text';
+        preview.textContent = cleaned;
+        document.getElementById('btn-send-ocr').disabled = false;
+        statusEl.textContent = `✓ ${cleaned.split(/\s+/).length} kata terdeteksi`;
+        App.toast('Teks berhasil terbaca!','ok');
+      }
+    } catch {
+      preview.className = 'ocr-preview';
+      preview.textContent = 'Gagal membaca teks. Coba lagi.';
+      statusEl.textContent = 'Error OCR';
+      App.toast('Gagal OCR.','err');
     }
-    Object.assign(State, {
-      role: null, deviceType: null, roomId: null, code: null,
-      ws: null, timerInterval: null, expiresAt: null,
-      peerConnected: false, scanLoop: null, videoStream: null, encKey: null,
-    });
 
-    // Reset UI
-    ['received-list-qr','received-list-code','sent-list'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = '';
-    });
-    document.getElementById('sender-connected').style.display = 'none';
-    document.querySelectorAll('.tab-row').forEach(el => el.style.display = 'flex');
-    document.getElementById('code-input').value = '';
-    document.getElementById('text-to-send').value = '';
-    document.getElementById('btn-create-room').disabled = true;
-    document.getElementById('dev-desktop').classList.remove('selected');
-    document.getElementById('dev-mobile').classList.remove('selected');
-    document.getElementById('qr-expired').classList.remove('show');
-    document.getElementById('code-expired').style.display = 'none';
-    document.getElementById('peer-badge-qr').style.display = 'none';
-    document.getElementById('peer-badge-code').style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = '📷 Scan Sekarang';
   },
 
-  // --- Status ---
-  setStatus(status) {
-    const dot = document.getElementById('status-dot');
-    const label = document.getElementById('status-label');
-    dot.className = 'status-dot ' + status;
-    const labels = { offline: 'offline', waiting: 'menunggu...', connected: 'terhubung' };
-    label.textContent = labels[status] || status;
+  async sendOCRText() {
+    if (!State.ocrText) return;
+    await App.sendText(State.ocrText);
+    State.ocrText = '';
+    const preview = document.getElementById('ocr-preview');
+    preview.className = 'ocr-preview';
+    preview.textContent = 'Hasil teks akan muncul di sini...';
+    document.getElementById('btn-send-ocr').disabled = true;
+    document.getElementById('ocr-status').textContent = 'Siap scan';
   },
 
-  // --- Toast ---
+  async sendManualText() {
+    const ta = document.getElementById('manual-text');
+    const text = ta.value.trim();
+    if (!text) return;
+    await App.sendText(text);
+    ta.value = '';
+  },
+
+  // ---- WEBSOCKET ----
+  connectWS(roomId, role) {
+    if (State.ws) { try { State.ws.close(); } catch {} }
+    const ws = new WebSocket(`${CONFIG.WS_BASE}/ws/${roomId}?role=${role}`);
+    State.ws = ws;
+    App.setStatus('wait','menghubungkan...');
+
+    ws.onopen = () => { ws.send(JSON.stringify({ type:'READY' })); App.setStatus('on','terhubung'); };
+    ws.onmessage = async (e) => {
+      let msg; try { msg = JSON.parse(e.data); } catch { return; }
+      if (msg.type === 'PEER_CONNECTED' && State.role === 'laptop') {
+        document.getElementById('peer-badge').style.display = 'inline-flex';
+        App.toast('HP terhubung!','ok');
+      }
+      if (msg.type === 'PEER_DISCONNECTED' && State.role === 'laptop') {
+        document.getElementById('peer-badge').style.display = 'none';
+        App.toast('HP terputus.','err');
+      }
+      if (msg.type === 'TEXT_RECEIVED' && State.role === 'laptop') {
+        try {
+          const plain = State.encKey ? await Crypto.decrypt(State.encKey, msg.text) : msg.text;
+          App.displayReceivedText(plain);
+        } catch { App.displayReceivedText(msg.text); }
+      }
+    };
+    ws.onerror = () => App.setStatus('','offline');
+    ws.onclose  = () => { if (App._intentionalClose) return; App.setStatus('','offline'); };
+  },
+
+  async sendText(text) {
+    if (!State.ws || State.ws.readyState !== WebSocket.OPEN) { App.toast('Belum terhubung ke laptop.','err'); return; }
+    try {
+      const payload = State.encKey ? await Crypto.encrypt(State.encKey, text) : text;
+      State.ws.send(JSON.stringify({ type:'TEXT_PAYLOAD', text:payload }));
+      App.toast('Teks terkirim ke laptop! ✓','ok');
+    } catch { App.toast('Gagal mengirim.','err'); }
+  },
+
+  displayReceivedText(text) {
+    const hint = document.getElementById('empty-hint');
+    if (hint) hint.style.display = 'none';
+    const area = document.getElementById('received-area');
+    const now = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const safeText = App.escapeHtml(text);
+    const safeAttr = App.escapeAttr(text);
+    const block = document.createElement('div');
+    block.className = 'received-block';
+    block.innerHTML = `
+      <div class="rb-head">
+        <span class="rb-label">📩 Teks Diterima</span>
+        <span class="rb-time">${now}</span>
+      </div>
+      <div class="rb-body">
+        <div class="rb-text">${safeText}</div>
+        <div class="rb-btns">
+          <button class="small-btn" onclick="App.copyText(this,'${safeAttr}')">📋 Salin</button>
+          <button class="small-btn" onclick="App.appendToClipboard(this,'${safeAttr}')">📋+ Gabung & Salin</button>
+        </div>
+      </div>`;
+    area.prepend(block);
+    App.toast('Teks diterima!','ok');
+  },
+
+  copyText(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      const o = btn.innerHTML; btn.innerHTML = '✅ Tersalin!';
+      setTimeout(() => btn.innerHTML = o, 2000);
+    });
+  },
+
+  appendToClipboard(btn, newText) {
+    navigator.clipboard.readText().then(existing => {
+      return navigator.clipboard.writeText((existing ? existing + '\n\n' : '') + newText);
+    }).then(() => {
+      const o = btn.innerHTML; btn.innerHTML = '✅ Digabung!';
+      setTimeout(() => btn.innerHTML = o, 2000);
+    }).catch(() => {
+      navigator.clipboard.writeText(newText).then(() => {
+        btn.innerHTML = '✅ Tersalin!';
+        setTimeout(() => btn.innerHTML = '📋+ Gabung & Salin', 2000);
+      });
+    });
+  },
+
+  // ---- CLEANUP ----
+  cleanup() {
+    App._intentionalClose = true;
+    App.stopConnScanner();
+    App.stopOCRCamera();
+    if (State.timerInterval) clearInterval(State.timerInterval);
+    if (State.ws) { try { State.ws.close(); } catch {} }
+    App._intentionalClose = false;
+    Object.assign(State, { role:null, roomId:null, ws:null, timerInterval:null, expiresAt:null, encKey:null, connStream:null, connScanRaf:null, ocrStream:null, ocrText:'' });
+    // reset UI
+    const hint = document.getElementById('empty-hint');
+    if (hint) hint.style.display = 'block';
+    const area = document.getElementById('received-area');
+    if (area) Array.from(area.children).forEach(c => { if (c.id !== 'empty-hint') c.remove(); });
+    const qe = document.getElementById('qr-expired');
+    if (qe) qe.classList.remove('show');
+    const pb = document.getElementById('peer-badge');
+    if (pb) pb.style.display = 'none';
+    const ocrP = document.getElementById('ocr-preview');
+    if (ocrP) { ocrP.className = 'ocr-preview'; ocrP.textContent = 'Hasil teks akan muncul di sini...'; }
+    const sendBtn = document.getElementById('btn-send-ocr');
+    if (sendBtn) sendBtn.disabled = true;
+    const fill = document.getElementById('timer-fill');
+    if (fill) { fill.style.width = '100%'; fill.style.background = 'var(--green)'; }
+    const lbl = document.getElementById('timer-label');
+    if (lbl) { lbl.textContent = 'Berlaku 15 detik'; lbl.classList.remove('urgent'); }
+  },
+
+  setStatus(state, label) {
+    document.getElementById('status-dot').className = 'status-dot ' + state;
+    document.getElementById('status-label').textContent = label;
+  },
+
   toast(msg, type = '') {
-    const c = document.getElementById('toast-container');
+    const c = document.getElementById('toasts');
     const el = document.createElement('div');
-    el.className = `toast ${type}`;
+    el.className = 'toast ' + type;
     el.textContent = msg;
     c.appendChild(el);
-    setTimeout(() => {
-      el.style.transition = 'opacity 0.3s';
-      el.style.opacity = '0';
-      setTimeout(() => el.remove(), 350);
-    }, 2500);
+    setTimeout(() => { el.style.transition = 'opacity 0.3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 350); }, 2800);
   },
 
-  // --- Helpers ---
   escapeHtml(str) {
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   },
+  escapeAttr(str) {
+    return str.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').replace(/\r/g,'');
+  },
 };
 
-// Expose globally
 window.App = App;
 </script>
 </body>
