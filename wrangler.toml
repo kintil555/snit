@@ -1,7 +1,6 @@
-name = "snaptext-relay"
+name = "snitrelay"
 main = "worker/index.js"
 compatibility_date = "2024-09-23"
-compatibility_flags = ["nodejs_compat"]
 
 [[durable_objects.bindings]]
 name = "ROOMS"
@@ -9,10 +8,4 @@ class_name = "Room"
 
 [[migrations]]
 tag = "v1"
-new_classes = ["Room"]
-
-[build]
-command = ""
-
-# For Cloudflare Pages + Workers integration
-# Deploy worker separately, then set VITE_WS_URL in Pages env
+new_sqlite_classes = ["Room"]
