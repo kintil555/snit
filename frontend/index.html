@@ -953,7 +953,7 @@ const CONFIG = {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       return 'http://localhost:8787';
     }
-    return (window.SNAPTEXT_API_URL || 'https://snaptext-relay.workers.dev').replace(/\/$/, '');
+    return (window.SNAPTEXT_API_URL || 'https://snitrelay.secret5.workers.dev/').replace(/\/$/, '');
   },
   EXPIRE_MS: 15000,
   MAX_TEXT: 5000,
