@@ -683,13 +683,18 @@ const App = {
   },
 
   // ---- WEBSOCKET ----
-  connectWS(roomId, role) {
+  connectWS(roomId, role, attempt = 0) {
     if (State.ws) { try { State.ws.close(); } catch {} }
     const ws = new WebSocket(`${CONFIG.WS_BASE}/ws/${roomId}?role=${role}`);
     State.ws = ws;
-    App.setStatus('wait','menghubungkan...');
+    if (attempt === 0) App.setStatus('wait','menghubungkan...');
 
-    ws.onopen = () => { ws.send(JSON.stringify({ type:'READY' })); App.setStatus('on','terhubung'); };
+    const retryDelay = Math.min(2000 * (attempt + 1), 8000);
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type:'READY' }));
+      App.setStatus('on','terhubung');
+    };
     ws.onmessage = async (e) => {
       let msg; try { msg = JSON.parse(e.data); } catch { return; }
       if (msg.type === 'PEER_CONNECTED' && State.role === 'laptop') {
@@ -707,8 +712,17 @@ const App = {
         } catch { App.displayReceivedText(msg.text); }
       }
     };
-    ws.onerror = () => App.setStatus('','offline');
-    ws.onclose  = () => { if (App._intentionalClose) return; App.setStatus('','offline'); };
+    ws.onerror = () => {};
+    ws.onclose = () => {
+      if (App._intentionalClose) return;
+      App.setStatus('wait', attempt < 5 ? `retry ${attempt+1}...` : 'offline');
+      if (attempt < 5) {
+        setTimeout(() => App.connectWS(roomId, role, attempt + 1), retryDelay);
+      } else {
+        App.setStatus('','offline');
+        App.toast('Koneksi gagal. Coba refresh.','err');
+      }
+    };
   },
 
   async sendText(text) {
