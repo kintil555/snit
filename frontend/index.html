@@ -482,10 +482,26 @@ const App = {
     App.setStatus('','offline');
   },
 
+  // ---- WORKER WARM-UP ----
+  async warmUpWorker() {
+    App.setStatus('wait', 'menghidupkan server...');
+    // Ping worker beberapa kali sampai respond, biar tidak cold start saat HP scan
+    for (let i = 0; i < 5; i++) {
+      try {
+        const res = await fetch(`${CONFIG.API_BASE}/api/ping`, { method: 'GET' });
+        if (res.status !== 404 || res.ok) break; // worker sudah hidup (404 = normal, artinya responding)
+        break;
+      } catch {
+        await new Promise(r => setTimeout(r, 800));
+      }
+    }
+  },
+
   // ---- LAPTOP MODE ----
   async startAsLaptop() {
     State.role = 'laptop';
     App.showScreen('screen-laptop');
+    await App.warmUpWorker();
     await App.createRoom();
   },
 
