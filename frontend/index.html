@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <script src='https://unpkg.com/tesseract.js@4/dist/tesseract.min.js'></script>
 
 <style>
@@ -355,16 +356,8 @@ textarea.manual-ta:focus { border-color: var(--green); }
       <div class="qr-card">
         <div class="qr-box">
           <div id="qr-render"></div>
-          <div class="qr-expired-overlay" id="qr-expired">
-            <div style="font-size:26px">⏱️</div>
-            <p>QR kedaluwarsa</p>
-            <button class="btn btn-green btn-sm" onclick="App.refreshRoom()" style="margin-top:6px">Perbarui QR</button>
-          </div>
         </div>
-        <div class="timer-section">
-          <div class="timer-label" id="timer-label">Berlaku 15 detik</div>
-          <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
-        </div>
+        <p style="font-size:12px;color:var(--text-dim);font-family:var(--mono);">Scan dari HP untuk terhubung</p>
       </div>
       <div class="peer-badge" id="peer-badge" style="display:none">
         <span>●</span> HP terhubung — menunggu scan teks
@@ -447,7 +440,7 @@ const CONFIG = {
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'http://localhost:8787';
     return (window.SNAPTEXT_API_URL || 'https://snitrelay.secret5.workers.dev').replace(/\/$/, '');
   },
-  EXPIRE_MS: 15000,
+  EXPIRE_MS: 60000,
 };
 
 const State = {
@@ -534,25 +527,13 @@ const App = {
 
   startTimer() {
     if (State.timerInterval) clearInterval(State.timerInterval);
-    const fill = document.getElementById('timer-fill');
-    const label = document.getElementById('timer-label');
-    const tick = () => {
-      const rem = State.expiresAt - Date.now();
-      const pct = Math.max(0, (rem / CONFIG.EXPIRE_MS) * 100);
-      if (fill) fill.style.width = pct + '%';
-      const s = Math.ceil(rem / 1000);
-      if (rem <= 0) {
+    // Auto-refresh diam-diam saat expired, tanpa tampilkan timer
+    State.timerInterval = setInterval(async () => {
+      if (Date.now() >= State.expiresAt) {
         clearInterval(State.timerInterval);
-        if (label) { label.textContent = 'Kedaluwarsa!'; label.classList.add('urgent'); }
-        if (fill) fill.style.background = 'var(--red)';
-        document.getElementById('qr-expired').classList.add('show');
-      } else {
-        if (label) { label.textContent = `Berlaku ${s} detik`; label.classList.toggle('urgent', s <= 5); }
-        if (fill && s <= 5) fill.style.background = 'var(--red)';
+        await App.createRoom(); // auto-generate baru
       }
-    };
-    tick();
-    State.timerInterval = setInterval(tick, 250);
+    }, 5000);
   },
 
   // ---- PHONE MODE ----
@@ -807,10 +788,6 @@ const App = {
     if (ocrP) { ocrP.className = 'ocr-preview'; ocrP.textContent = 'Hasil teks akan muncul di sini...'; }
     const sendBtn = document.getElementById('btn-send-ocr');
     if (sendBtn) sendBtn.disabled = true;
-    const fill = document.getElementById('timer-fill');
-    if (fill) { fill.style.width = '100%'; fill.style.background = 'var(--green)'; }
-    const lbl = document.getElementById('timer-label');
-    if (lbl) { lbl.textContent = 'Berlaku 15 detik'; lbl.classList.remove('urgent'); }
   },
 
   setStatus(state, label) {
