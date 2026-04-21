@@ -16,6 +16,13 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // Route: Ping / warm-up
+    if (url.pathname === '/api/ping') {
+      return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Route: Create a new room
     if (url.pathname === '/api/room/create' && request.method === 'POST') {
       const body = await request.json();
