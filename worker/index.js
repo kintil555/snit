@@ -23,7 +23,7 @@ export default {
 
       const roomId = generateRoomId();
       const code = receiverType === 'mobile' ? generateNumericCode() : null;
-      const expiresAt = Date.now() + 15 * 1000; // 15 seconds
+      const expiresAt = Date.now() + 60 * 1000; // 60 seconds
 
       const id = env.ROOMS.idFromName(roomId);
       const room = env.ROOMS.get(id);
